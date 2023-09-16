@@ -1,0 +1,129 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\math">
+      <UniqueIdentifier>{0f318676-7685-461f-abd2-8f96e6f75e64}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="application.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="graphics.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="earthview.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="daycycleview.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="shaderviewbase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="menu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="slider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="application.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="graphics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="earthview.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="math\vector4.hpp">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\linalg.hpp">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\matrix2x2.hpp">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\matrix3x3.hpp">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\matrix4x4.hpp">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\position.hpp">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\quaternion.hpp">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\vector2.hpp">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\vector3.hpp">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\formulas.hpp">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\geometry2d.hpp">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\geometry3d.hpp">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="math\graph.hpp">
+      <Filter>Header Files\math</Filter>
+    </ClInclude>
+    <ClInclude Include="daycycleview.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shaderviewbase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="menu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="slider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="data\8k_earth_clouds.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="data\8k_earth_daymap.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="data\8k_earth_nightmap.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="data\8k_earth_normal_map.tif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="data\8k_earth_specular_map.tif">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="earthshader.hlsl" />
+    <FxCompile Include="daycycleshader.hlsl" />
+  </ItemGroup>
+</Project>
