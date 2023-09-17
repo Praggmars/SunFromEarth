@@ -1,45 +1,18 @@
 #include "application.h"
 #include <windowsx.h>
 
-void Application::ChangeLatitudeFromMouse(int x, int y)
-{
-	float latitude = 0.0f;
-	if (m_earthView.GetLatitude(
-		x - (m_resolution.x - m_earthView.Resolution().x),
-		y - (m_resolution.y - m_earthView.Resolution().y),
-		latitude))
-	{
-		m_menu.UpdateSettings([latitude](Menu::Data& settings) {
-			settings.latitude = latitude;
-			});
-	}
-}
-
-void Application::ChangeTiltFromMouse(int x, int y)
-{
-	const float tilt = (mth::float2(static_cast<float>(x), static_cast<float>(-y)) - mth::float2(
-		static_cast<float>(m_resolution.x) - static_cast<float>(m_earthView.Resolution().x) * 0.5f,
-		static_cast<float>(m_earthView.Resolution().y) * 0.5f - static_cast<float>(m_resolution.y))).Angle();
-	m_earthView.SetTilt(tilt);
-	m_dayCycleView.SetTilt(tilt);
-}
-
 void Application::PaintEvent()
 {
 	m_graphics.BeginDraw();
 
+	m_earthView.SetLatitude(m_menu.Settings().latitude);
 	m_earthView.SetTilt(m_menu.Settings().planetTilt);
 	m_dayCycleView.SetLatitude(m_menu.Settings().latitude);
 	m_dayCycleView.SetTilt(m_menu.Settings().planetTilt);
 	m_dayCycleView.SetDayAdjust(m_menu.Settings().dayAdjust);
 
-	m_earthView.Update();
-
 	m_earthView.Render(m_graphics);
 	m_dayCycleView.Render(m_graphics);
-	const mth::float2 cursor(static_cast<float>(m_prevCursor.x), static_cast<float>(m_prevCursor.y));
-	if (IsOnRect(cursor, m_dayCycleView.Rectangle()))
-		m_dayCycleView.RenderTimePresenter(m_graphics, cursor);
 	m_menu.Render(m_graphics);
 
 	m_graphics.EndDraw();
@@ -55,59 +28,122 @@ void Application::Resize(int width, int height)
 	const int dayCycleHeight = earthMapSize / 3;
 
 	m_earthView.SetRect(m_graphics, D2D1::RectF(
-			static_cast<float>(m_resolution.x - earthMapSize),
-			static_cast<float>(dayCycleHeight),
-			static_cast<float>(m_resolution.x),
-			static_cast<float>(dayCycleHeight + earthMapSize)));
+		static_cast<float>(m_resolution.x - earthMapSize),
+		static_cast<float>(dayCycleHeight),
+		static_cast<float>(m_resolution.x),
+		static_cast<float>(dayCycleHeight + earthMapSize)));
 
 	m_dayCycleView.SetRect(m_graphics, D2D1::RectF(
-			static_cast<float>(m_resolution.x - earthMapSize),
-			0.0f,
-			static_cast<float>(m_resolution.x),
-			static_cast<float>(dayCycleHeight)));
+		static_cast<float>(m_resolution.x - earthMapSize),
+		0.0f,
+		static_cast<float>(m_resolution.x),
+		static_cast<float>(dayCycleHeight)));
 
-	m_menu.Resize(m_resolution.x - m_dayCycleView.Resolution().x, m_resolution.y);
+	m_menu.SetRect(m_graphics, D2D1::RectF(
+		0.0f,
+		0.0f,
+		static_cast<float>(m_resolution.x - m_dayCycleView.Resolution().x),
+		static_cast<float>(m_resolution.y)));
 }
 
 void Application::MouseLButtonDownEvent(int x, int y, WPARAM flags)
 {
 	SetCapture(m_mainWindow);
-	ChangeLatitudeFromMouse(x, y);
-	m_menu.LButtonDownEvent(x, y, flags);
+	if (m_activeEventHandler)
+		m_activeEventHandler->LButtonDownEvent(x, y, flags);
+	else
+	{
+		for (EventHandler* eh : m_eventHandlers)
+			if (IsOnRect(mth::float2(static_cast<float>(x), static_cast<float>(y)), eh->Rectangle()))
+			{
+				m_activeEventHandler = eh;
+				eh->LButtonDownEvent(x, y, flags);
+				break;
+			}
+	}
 	m_prevCursor = { x, y };
 }
 
 void Application::MouseRButtonDownEvent(int x, int y, WPARAM flags)
 {
-	//ChangeTiltFromMouse(x, y);
+	SetCapture(m_mainWindow);
+	if (m_activeEventHandler)
+		m_activeEventHandler->RButtonDownEvent(x, y, flags);
+	else
+	{
+		for (EventHandler* eh : m_eventHandlers)
+			if (IsOnRect(mth::float2(static_cast<float>(x), static_cast<float>(y)), eh->Rectangle()))
+			{
+				m_activeEventHandler = eh;
+				eh->RButtonDownEvent(x, y, flags);
+				break;
+			}
+	}
 	m_prevCursor = { x, y };
 }
 
 void Application::MouseLButtonUpEvent(int x, int y, WPARAM flags)
 {
-	ReleaseCapture();
-	m_menu.LButtonUpEvent(x, y, flags);
+	if (0 == (flags & (MK_LBUTTON | MK_RBUTTON)))
+	{
+		m_activeEventHandler = nullptr;
+		ReleaseCapture();
+	}
+	if (m_activeEventHandler)
+		m_activeEventHandler->LButtonUpEvent(x, y, flags);
+	else
+	{
+		for (EventHandler* eh : m_eventHandlers)
+			if (IsOnRect(mth::float2(static_cast<float>(x), static_cast<float>(y)), eh->Rectangle()))
+			{
+				eh->LButtonUpEvent(x, y, flags);
+				break;
+			}
+	}
 	m_prevCursor = { x, y };
 }
 
 void Application::MouseRButtonUpEvent(int x, int y, WPARAM flags)
 {
+	if (0 == (flags & (MK_LBUTTON | MK_RBUTTON)))
+	{
+		m_activeEventHandler = nullptr;
+		ReleaseCapture();
+	}
+	if (m_activeEventHandler)
+		m_activeEventHandler->RButtonUpEvent(x, y, flags);
+	else
+	{
+		for (EventHandler* eh : m_eventHandlers)
+			if (IsOnRect(mth::float2(static_cast<float>(x), static_cast<float>(y)), eh->Rectangle()))
+			{
+				eh->RButtonUpEvent(x, y, flags);
+				break;
+			}
+	}
 	m_prevCursor = { x, y };
 }
 
 void Application::MouseMoveEvent(int x, int y, WPARAM flags)
 {
-	if (flags & MK_LBUTTON && IsOnRect(mth::float2(static_cast<float>(x), static_cast<float>(y)), m_earthView.Rectangle()))
-		ChangeLatitudeFromMouse(x, y);
-	/*if (flags & MK_RBUTTON)
-		ChangeTiltFromMouse(x, y);*/
-	m_menu.MouseMoveEvent(x, y, flags);
+	if (m_activeEventHandler)
+		m_activeEventHandler->MouseMoveEvent(x, y, flags);
+	else
+	{
+		for (EventHandler* eh : m_eventHandlers)
+			if (IsOnRect(mth::float2(static_cast<float>(x), static_cast<float>(y)), eh->Rectangle()))
+			{
+				eh->MouseMoveEvent(x, y, flags);
+				break;
+			}
+	}
 	m_prevCursor = { x, y };
 }
 
 Application::Application()
 	: m_mainWindow{}
-	, m_prevCursor{} {}
+	, m_prevCursor{}
+	, m_activeEventHandler{} {}
 
 Application::~Application() 
 {
@@ -136,8 +172,17 @@ void Application::Init(const wchar_t* title, int width, int height)
 
 	m_graphics.Init(m_mainWindow);
 	m_menu.Init(m_graphics);
-	m_earthView.Init(m_graphics, 1, 1);
 	m_dayCycleView.Init(m_graphics, 1, 1);
+	m_earthView.Init(m_graphics, 1, 1);
+	m_eventHandlers.push_back(&m_menu);
+	m_eventHandlers.push_back(&m_dayCycleView);
+	m_eventHandlers.push_back(&m_earthView);
+
+	m_earthView.AssignLatitudeChange([this](float latitude) {
+		m_menu.UpdateSettings([latitude](Menu::Data& settings) {
+			settings.latitude = latitude;
+			});
+		});
 
 	ShowWindow(m_mainWindow, SW_SHOWDEFAULT);
 	UpdateWindow(m_mainWindow);

@@ -29,9 +29,16 @@ private:
 	float m_tilt;
 	float m_latitude;
 	float m_dayAdjust;
+	mth::float2 m_cursor;
+	bool m_cursorShowing;
 
 public:
+	DayCycleView();
 	virtual void Init(const Graphics& graphics, int width, int height) override;
+
+	virtual void LButtonDownEvent(int x, int y, WPARAM flags) override;
+	virtual void RButtonDownEvent(int x, int y, WPARAM flags) override;
+	virtual void MouseMoveEvent(int x, int y, WPARAM flags) override;
 
 	virtual void Render(const Graphics& graphics) const override;
 	void RenderTimePresenter(const Graphics& graphics, mth::float2 cursor) const;

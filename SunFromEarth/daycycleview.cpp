@@ -9,6 +9,12 @@ DayCycleView::ShaderData::ShaderData()
 	, dayAdjust{}
 	, padding{} {}
 
+DayCycleView::DayCycleView()
+	: m_tilt{}
+	, m_latitude{}
+	, m_dayAdjust{}
+	, m_cursorShowing{} {}
+
 void DayCycleView::Init(const Graphics& graphics, int width, int height)
 {
 	m_tilt = -23.5f / 180.0f * mth::pi;
@@ -18,6 +24,27 @@ void DayCycleView::Init(const Graphics& graphics, int width, int height)
 	CreateImageResources(graphics, width, height);
 	m_shaderParamBuffer = graphics.CreateConstBuffer(sizeof(ShaderData));
 	m_timePresentBrush = graphics.CreateBrush(mth::float4(1.0f));
+}
+
+void DayCycleView::LButtonDownEvent(int x, int y, WPARAM flags)
+{
+	m_cursor = mth::float2(static_cast<float>(x), static_cast<float>(y));
+	m_cursorShowing = true;
+}
+
+void DayCycleView::RButtonDownEvent(int x, int y, WPARAM flags)
+{
+	m_cursorShowing = false;
+}
+
+void DayCycleView::MouseMoveEvent(int x, int y, WPARAM flags)
+{
+	if (flags & MK_LBUTTON)
+	{
+		const mth::float2 cursor = mth::float2(static_cast<float>(x), static_cast<float>(y));
+		if (IsOnRect(cursor, m_rect))
+			m_cursor = cursor;
+	}
 }
 
 void DayCycleView::Render(const Graphics& graphics) const
@@ -37,6 +64,8 @@ void DayCycleView::Render(const Graphics& graphics) const
 	graphics.Context3D()->CSSetConstantBuffers(0, 1, &cBuffer);
 	LaunchShader(graphics);
 	graphics.Context2D()->DrawBitmap(m_outputImage.Get(), m_rect);
+	if (m_cursorShowing)
+		RenderTimePresenter(graphics, m_cursor);
 }
 
 void DayCycleView::RenderTimePresenter(const Graphics& graphics, mth::float2 cursor) const

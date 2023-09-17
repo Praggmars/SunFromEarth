@@ -42,6 +42,9 @@
     <ClCompile Include="slider.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="eventhandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application.h">
@@ -102,6 +105,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="slider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="eventhandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

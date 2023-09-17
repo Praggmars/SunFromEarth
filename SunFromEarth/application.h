@@ -14,11 +14,10 @@ class Application
 	Menu m_menu;
 	EarthView m_earthView;
 	DayCycleView m_dayCycleView;
+	std::vector<EventHandler*> m_eventHandlers;
+	EventHandler* m_activeEventHandler;
 
 private:
-	void ChangeLatitudeFromMouse(int x, int y);
-	void ChangeTiltFromMouse(int x, int y);
-
 	void PaintEvent();
 	void Resize(int width, int height);
 	void MouseLButtonDownEvent(int x, int y, WPARAM flags);

@@ -1,8 +1,9 @@
 #pragma once
 
 #include "slider.h"
+#include "eventhandler.h"
 
-class Menu
+class Menu : public EventHandler
 {
 public:
 	struct Data
@@ -21,7 +22,6 @@ private:
 	Slider m_adjustDaySlider;
 
 	Data m_settings;
-	mth::vec2<int> m_resolution;
 	POINT m_prevCursor;
 
 private:
@@ -35,11 +35,12 @@ private:
 public:
 	void Init(const Graphics& graphics);
 	void Render(const Graphics& graphics) const;
-	void Resize(int width, int height);
 
-	void LButtonDownEvent(int x, int y, WPARAM flags);
-	void LButtonUpEvent(int x, int y, WPARAM flags);
-	void MouseMoveEvent(int x, int y, WPARAM flags);
+	virtual void SetRect(const Graphics& graphics, D2D1_RECT_F rect) override;
+
+	virtual void LButtonDownEvent(int x, int y, WPARAM flags) override;
+	virtual void LButtonUpEvent(int x, int y, WPARAM flags) override;
+	virtual void MouseMoveEvent(int x, int y, WPARAM flags) override;
 
 	void UpdateSettings(std::function<void(Data&)> updater);
 

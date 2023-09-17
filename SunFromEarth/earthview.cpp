@@ -1,17 +1,63 @@
 #include "earthview.h"
 #include <future>
 
+static const mth::float3 LIGHT_DIRECTION = mth::float3(-1.0f, 0.0f, 0.0f);
+static const float PLANE_DISTANCE = 70.0f;
+static const mth::float3 PLANET_POSITION = mth::float3(0.0f, 0.0f, 0.0f);
+static const float PLANET_RADIUS = 1.0f;
+
 EarthView::ShaderData::ShaderData()
 	: planeDist{}
 	, planetRad{} {}
 
-void EarthView::ResizeCB()
+mth::float2 EarthView::CoordScaler() const
 {
-	m_shaderData.coordOffset.x = (m_rect.left - m_rect.right) / (m_rect.bottom - m_rect.top);
-	m_shaderData.coordOffset.y = 1.0f;
-	m_shaderData.coordScaler.x = 2.0f / (m_rect.bottom - m_rect.top);
-	m_shaderData.coordScaler.y = -2.0f / (m_rect.bottom - m_rect.top);
+	return mth::float2(2.0f / (m_rect.bottom - m_rect.top), -2.0f / (m_rect.bottom - m_rect.top));
 }
+
+mth::float2 EarthView::CoordOffset() const
+{
+	return mth::float2((m_rect.left - m_rect.right) / (m_rect.bottom - m_rect.top), 1.0f);
+}
+
+bool EarthView::GetLatitude(int x, int y, float& latitude) const
+{
+	mth::float3 src = m_eyePosition;
+	mth::float3 dir = mth::float3(mth::float2(static_cast<float>(x) - m_rect.left, static_cast<float>(y) - m_rect.top) * CoordScaler() + CoordOffset(), PLANE_DISTANCE).Normalized() * m_viewRotation;
+	mth::float3 p = src - PLANET_POSITION;
+	float a = dir.LengthSquare();
+	float b = p.Dot(dir);
+	float c = p.LengthSquare() - PLANET_RADIUS * PLANET_RADIUS;
+	float d = b * b - a * c;
+	if (d < 0.0f)
+		return false;
+
+	float t = (-std::sqrt(d) - b) / a;
+	mth::float3 normal = (src + dir * t - PLANET_POSITION).Normalized();
+	mth::float3 sphereCoord = mth::float3x3::RotationZ(-m_tilt) * normal;
+	latitude = std::atan2(sphereCoord.y, mth::float2(sphereCoord.x, sphereCoord.z).Length());
+
+	return true;
+}
+
+void EarthView::HandleLatitudeSelector(int x, int y)
+{
+	float latitude = 0.0f;
+	if (GetLatitude(x, y, latitude))
+	{
+		if (m_onLatitudeChange)
+		{
+			m_latitude = latitude;
+			m_onLatitudeChange(latitude);
+		}
+	}
+}
+
+EarthView::EarthView()
+	: m_viewRotation{}
+	, m_tilt{}
+	, m_latitude{}
+	, m_latitudeShowing{} {}
 
 void EarthView::Init(const Graphics& graphics, int width, int height)
 {
@@ -26,14 +72,7 @@ void EarthView::Init(const Graphics& graphics, int width, int height)
 
 	m_shader = graphics.CreateComputeShader(L"data/earthshader.cso");
 	CreateImageResources(graphics, width, height);
-	m_shaderParamBuffer = graphics.CreateConstBuffer(sizeof(m_shaderData));
-
-	m_tilt = -23.5f / 180.0f * mth::pi;
-
-	m_shaderData.lightDir = mth::float3(-3.0f, 0.0f, -2.0f).Normalized();
-	m_shaderData.planeDist = 70.0f;
-	m_shaderData.planetPos = mth::float3(0.0f, 0.0f, 75.0f);
-	m_shaderData.planetRad = 1.0f;
+	m_shaderParamBuffer = graphics.CreateConstBuffer(sizeof(ShaderData));
 
 	m_dayMap = dayMapFuture.get();
 	m_nightMap = nightMapFuture.get();
@@ -42,18 +81,54 @@ void EarthView::Init(const Graphics& graphics, int width, int height)
 	m_specularMap = specularMapFuture.get();
 
 	m_startTime = std::chrono::steady_clock::now();
+	m_eyePosition = mth::float3(0.0f, 0.0f, -75.0f);
+	m_viewRotation = mth::float3x3::Identity();
 }
 
-void EarthView::Update()
+void EarthView::LButtonDownEvent(int x, int y, WPARAM flags)
 {
-	const float totalTime = std::chrono::duration<float>(std::chrono::steady_clock::now() - m_startTime).count();
-	m_shaderData.planetTranform = mth::float4x4::RotationZ(m_tilt) * mth::float4x4::RotationY(totalTime * -0.25f);
+	HandleLatitudeSelector(x, y);
+	m_latitudeShowing = true;
+}
+
+void EarthView::LButtonUpEvent(int x, int y, WPARAM flags)
+{
+	m_latitudeShowing = false;
+}
+
+void EarthView::MouseMoveEvent(int x, int y, WPARAM flags)
+{
+	const mth::float2 cursor = mth::float2(static_cast<float>(x), static_cast<float>(y));
+
+	if (flags & MK_LBUTTON)
+		HandleLatitudeSelector(x, y);
+	if (flags & MK_RBUTTON)
+	{
+		const float sensitivity = 0.008f;
+		m_viewRotation = 
+			mth::float3x3::RotationX((m_prevCursor.y - cursor.y) * sensitivity) *
+			mth::float3x3::RotationY((m_prevCursor.x - cursor.x) * sensitivity) *
+			m_viewRotation;
+		m_eyePosition = mth::float3(0.0f, 0.0f, -75.0f) * m_viewRotation;
+	}
+	m_prevCursor = cursor;
 }
 
 void EarthView::Render(const Graphics& graphics) const
 {
+	ShaderData shaderData{};
+	shaderData.lightDir = LIGHT_DIRECTION;
+	shaderData.planeDist = PLANE_DISTANCE;
+	shaderData.planetPos = PLANET_POSITION;
+	shaderData.planetRad = PLANET_RADIUS;
+	shaderData.coordOffset = CoordOffset();
+	shaderData.coordScaler = CoordScaler();
+	shaderData.eyePosition = m_eyePosition;
+	shaderData.latitude = m_latitudeShowing ? m_latitude : std::numeric_limits<float>::quiet_NaN();
+	shaderData.viewRotation = mth::float4x4(m_viewRotation);
+	shaderData.planetTranform = mth::float4x4::RotationZ(m_tilt) * mth::float4x4::RotationY(std::chrono::duration<float>(std::chrono::steady_clock::now() - m_startTime).count() * -0.25f);
 	ID3D11Buffer* cBuffer = m_shaderParamBuffer.Get();
-	graphics.UpdateConstBuffer(cBuffer, &m_shaderData, sizeof(m_shaderData));
+	graphics.UpdateConstBuffer(cBuffer, &shaderData, sizeof(shaderData));
 	graphics.Context3D()->CSSetConstantBuffers(0, 1, &cBuffer);
 
 	ID3D11ShaderResourceView* textures[] = {
@@ -70,27 +145,17 @@ void EarthView::Render(const Graphics& graphics) const
 	graphics.Context2D()->DrawBitmap(m_outputImage.Get(), m_rect);
 }
 
-bool EarthView::GetLatitude(int x, int y, float& latitude) const
-{
-	mth::float3 src = mth::float3(0.0f, 0.0f, 0.0f);
-	mth::float3 dir = mth::float3(mth::float2(static_cast<float>(x), static_cast<float>(y)) * m_shaderData.coordScaler + m_shaderData.coordOffset, m_shaderData.planeDist).Normalized();
-	mth::float3 p = src - m_shaderData.planetPos;
-	float a = dir.LengthSquare();
-	float b = p.Dot(dir);
-	float c = p.LengthSquare() - m_shaderData.planetRad * m_shaderData.planetRad;
-	float d = b * b - a * c;
-	if (d < 0.0f)
-		return false;
-
-	float t = (-sqrt(d) - b) / a;
-	mth::float3 normal = (src + dir * t - m_shaderData.planetPos).Normalized();
-	mth::float3 sphereCoord = mth::float3x3::RotationZ(-m_tilt) * normal;
-	latitude = atan2(sphereCoord.y, mth::float2(sphereCoord.x, sphereCoord.z).Length());
-
-	return true;
-}
-
 void EarthView::SetTilt(float tilt)
 {
 	m_tilt = tilt;
+}
+
+void EarthView::SetLatitude(float latitude)
+{
+	m_latitude = latitude;
+}
+
+void EarthView::AssignLatitudeChange(std::function<void(float latitude)> onLatitudeChange)
+{
+	m_onLatitudeChange = onLatitudeChange;
 }

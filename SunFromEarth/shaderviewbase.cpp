@@ -41,14 +41,9 @@ void ShaderViewBase::LaunchShader(const Graphics& graphics) const
 		1);
 }
 
-void ShaderViewBase::ResizeCB()
-{
-}
-
 void ShaderViewBase::SetRect(const Graphics& graphics, D2D1_RECT_F rect)
 {
 	m_rect = rect;
 	const mth::vec2<int> resolution = Resolution();
 	CreateImageResources(graphics, resolution.x, resolution.y);
-	ResizeCB();
 }

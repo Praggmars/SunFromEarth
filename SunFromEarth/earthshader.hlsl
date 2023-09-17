@@ -14,6 +14,9 @@ cbuffer ShaderData : register(b0)
     float planeDist;
     float3 planetPos;
     float planetRad;
+    float3 eyePosition;
+    float latitude;
+    float4x4 viewRotation;
     float4x4 planetTranform;
 };
 
@@ -43,6 +46,9 @@ float4 EarthColor(float3 sphereCoord)
         atan2(sphereCoord.x, -sphereCoord.z) / (2.0f * PI) + 0.5f,
         atan2(sphereCoord.y, length(sphereCoord.xz)) / -PI + 0.5f
     );
+    
+    if (abs(uv.y - (latitude / -PI + 0.5f)) < coordScaler.x * 0.5f)
+        return float4(1.0f, 1.0f, 1.0f, 1.0f);
         
     float3 dayColor = daymap.SampleLevel(ss, uv, 0).rgb;
     float3 nightColor = nightmap.SampleLevel(ss, uv, 0).rgb;
@@ -52,8 +58,8 @@ float4 EarthColor(float3 sphereCoord)
 [numthreads(16, 16, 1)]
 void main(int3 dtID : SV_DispatchThreadID)
 {   
-    float3 src = float3(0.0f, 0.0f, 0.0f);
-    float3 dir = normalize(float3(float2(dtID.x, dtID.y) * coordScaler + coordOffset, planeDist));
+    float3 src = eyePosition;
+    float3 dir = mul((float3x3)viewRotation, normalize(float3(float2(dtID.x, dtID.y) * coordScaler + coordOffset, planeDist)));
     
     float4 color = float4(0.0f, 0.0f, 0.0f, 1.0f);
     float t;
